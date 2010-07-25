@@ -808,7 +808,7 @@ const struct message responses[] =
   ,.raw= "HTTP/1.1 200 OK\r\n"
          "Server: Microsoft-IIS/6.0\r\n"
          "X-Powered-By: ASP.NET\r\n"
-         "en-US Content-Type: text/xml\r\n" /* this is the problem */
+         "en-US Content-Type: \ttext/xml\r\n" /* this is the problem */
          "Content-Type: text/xml\r\n"
          "Content-Length: 16\r\n"
          "Date: Fri, 23 Jul 2010 18:45:38 GMT\r\n"

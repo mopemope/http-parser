@@ -1134,7 +1134,7 @@ size_t http_parser_execute (http_parser *parser,
 
       case s_header_value_start:
       {
-        if (ch == ' ') break;
+        if (ch == ' ' || ch == '\t') break;
 
         MARK(header_value);
 
