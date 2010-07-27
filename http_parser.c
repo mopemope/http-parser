@@ -1331,6 +1331,7 @@ size_t http_parser_execute (http_parser *parser,
       case s_headers_almost_done:
       headers_almost_done:
       {
+        parser->maybe_ml = 0;
         STRICT_CHECK(ch != LF);
 
         if (parser->flags & F_TRAILING) {
