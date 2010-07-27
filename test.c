@@ -472,6 +472,7 @@ const struct message requests[] =
          "Upgrade: WebSocket\r\n"
          "Sec-WebSocket-Key1: 4 @1  46546xW%0l 1 5\r\n"
          "Origin: http://example.com\r\n"
+         "\thttp://example.com\r\n"
          "\r\n"
   ,.should_keep_alive= TRUE
   ,.message_complete_on_eof= FALSE
@@ -490,7 +491,7 @@ const struct message requests[] =
              , { "Sec-WebSocket-Protocol", "sample" }
              , { "Upgrade", "WebSocket" }
              , { "Sec-WebSocket-Key1", "4 @1  46546xW%0l 1 5" }
-             , { "Origin", "http://example.com" }
+             , { "Origin", "http://example.com\thttp://example.com" }
              }
   ,.body= ""
   }
@@ -837,41 +838,46 @@ const struct message responses[] =
 };
 
 int
-request_path_cb (http_parser *p, const char *buf, size_t len)
+request_path_cb (http_parser *p, const char *buf, size_t len, char partial)
 {
   assert(p == parser);
+  assert(partial == 0 || partial == 1);
   strncat(messages[num_messages].request_path, buf, len);
   return 0;
 }
 
 int
-request_url_cb (http_parser *p, const char *buf, size_t len)
+request_url_cb (http_parser *p, const char *buf, size_t len, char partial)
 {
   assert(p == parser);
+  assert(partial == 0 || partial == 1);
   strncat(messages[num_messages].request_url, buf, len);
   return 0;
 }
 
 int
-query_string_cb (http_parser *p, const char *buf, size_t len)
+query_string_cb (http_parser *p, const char *buf, size_t len, char partial)
 {
   assert(p == parser);
+  assert(partial == 0 || partial == 1);
   strncat(messages[num_messages].query_string, buf, len);
   return 0;
 }
 
 int
-fragment_cb (http_parser *p, const char *buf, size_t len)
+fragment_cb (http_parser *p, const char *buf, size_t len, char partial)
 {
   assert(p == parser);
+  assert(partial == 0 || partial == 1);
   strncat(messages[num_messages].fragment, buf, len);
   return 0;
 }
 
 int
-header_field_cb (http_parser *p, const char *buf, size_t len)
+header_field_cb (http_parser *p, const char *buf, size_t len, char partial)
 {
   assert(p == parser);
+  assert(partial == 0 || partial == 1);
   struct message *m = &messages[num_messages];
 
   if (m->last_header_element != FIELD)
@@ -885,9 +891,10 @@ header_field_cb (http_parser *p, const char *buf, size_t len)
 }
 
 int
-header_value_cb (http_parser *p, const char *buf, size_t len)
+header_value_cb (http_parser *p, const char *buf, size_t len, char partial)
 {
   assert(p == parser);
+  assert(partial == 0 || partial == 1);
   struct message *m = &messages[num_messages];
 
   strncat(m->headers[m->num_headers-1][1], buf, len);
@@ -898,9 +905,10 @@ header_value_cb (http_parser *p, const char *buf, size_t len)
 }
 
 int
-body_cb (http_parser *p, const char *buf, size_t len)
+body_cb (http_parser *p, const char *buf, size_t len, char partial)
 {
   assert(p == parser);
+  assert(partial == 0 || partial == 1);
   strncat(messages[num_messages].body, buf, len);
   messages[num_messages].body_size += len;
  // printf("body_cb: '%s'\n", requests[num_messages].body);
@@ -908,9 +916,10 @@ body_cb (http_parser *p, const char *buf, size_t len)
 }
 
 int
-count_body_cb (http_parser *p, const char *buf, size_t len)
+count_body_cb (http_parser *p, const char *buf, size_t len, char partial)
 {
   assert(p == parser);
+  assert(partial == 0 || partial == 1);
   assert(buf);
   messages[num_messages].body_size += len;
   return 0;
@@ -1691,7 +1700,7 @@ main (void)
     "\tRA==\r\n"
     "\t-----END CERTIFICATE-----\r\n"
     "\r\n";
-  test_simple(dumbfuck2, 0);
+  test_simple(dumbfuck2, 1);
 
 #if 0
   // NOTE(Wed Nov 18 11:57:27 CET 2009) this seems okay. we just read body

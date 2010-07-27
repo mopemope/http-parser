@@ -60,7 +60,7 @@ do {                                                                 \
     if (settings->on_##FOR) {                                        \
       if (0 != settings->on_##FOR(parser,                            \
                                  FOR##_mark,                         \
-                                 p - FOR##_mark))                    \
+                                 p - FOR##_mark, 1))                    \
       {                                                              \
         return (p - data);                                           \
       }                                                              \
@@ -68,10 +68,23 @@ do {                                                                 \
   }                                                                  \
 } while (0)
 
+#define CALLBACK_CLEAR(FOR)                                        \
+do {                                                                 \
+  if (FOR##_mark) {                                                  \
+    if (settings->on_##FOR) {                                        \
+      if (0 != settings->on_##FOR(parser,                            \
+                                 FOR##_mark,                         \
+                                 p - FOR##_mark, 0))                    \
+      {                                                              \
+        return (p - data);                                           \
+      }                                                              \
+    }                                                                \
+  }                                                                  \
+} while (0)
 
 #define CALLBACK(FOR)                                                \
 do {                                                                 \
-  CALLBACK_NOCLEAR(FOR);                                             \
+  CALLBACK_CLEAR(FOR);                                             \
   FOR##_mark = NULL;                                                 \
 } while (0)
 
@@ -970,9 +983,12 @@ size_t http_parser_execute (http_parser *parser,
           goto headers_almost_done;
         }
 
+        if (parser->maybe_ml && (ch == ' '|| ch == '\t')) goto s_header_value_start_;
         c = LOWER(ch);
-
+       
         if (c < 'a' || 'z' < c) goto error;
+        
+        parser->maybe_ml = 0;
 
         MARK(header_field);
 
@@ -1133,8 +1149,9 @@ size_t http_parser_execute (http_parser *parser,
       }
 
       case s_header_value_start:
+      s_header_value_start_:
       {
-        if (ch == ' ' || ch == '\t') break;
+        if (!parser->maybe_ml && (ch == ' ' || ch == '\t')) break;
 
         MARK(header_value);
 
@@ -1148,12 +1165,14 @@ size_t http_parser_execute (http_parser *parser,
             CALLBACK(header_value);
             header_state = h_general;
             state = s_header_almost_done;
+            parser->maybe_ml = 1;
             break;
           }
 
           if (ch == LF) {
             CALLBACK(header_value);
             state = s_header_field_start;
+            parser->maybe_ml = 1;
             break;
           }
 
@@ -1208,11 +1227,18 @@ size_t http_parser_execute (http_parser *parser,
           if (ch == CR) {
             CALLBACK(header_value);
             state = s_header_almost_done;
+            if(header_state == h_general){
+              parser->maybe_ml = 1;
+            }
+
             break;
           }
 
           if (ch == LF) {
             CALLBACK(header_value);
+            if(header_state == h_general){
+              parser->maybe_ml = 1;
+            }
             goto header_almost_done;
           }
           break;
@@ -1378,7 +1404,7 @@ size_t http_parser_execute (http_parser *parser,
       case s_body_identity:
         to_read = MIN(pe - p, (ssize_t)parser->content_length);
         if (to_read > 0) {
-          if (settings->on_body) settings->on_body(parser, p, to_read);
+          if (settings->on_body) settings->on_body(parser, p, to_read, 0);
           p += to_read - 1;
           parser->content_length -= to_read;
           if (parser->content_length == 0) {
@@ -1392,7 +1418,7 @@ size_t http_parser_execute (http_parser *parser,
       case s_body_identity_eof:
         to_read = pe - p;
         if (to_read > 0) {
-          if (settings->on_body) settings->on_body(parser, p, to_read);
+          if (settings->on_body) settings->on_body(parser, p, to_read, 0);
           p += to_read - 1;
         }
         break;
@@ -1464,7 +1490,7 @@ size_t http_parser_execute (http_parser *parser,
         to_read = MIN(pe - p, (ssize_t)(parser->content_length));
 
         if (to_read > 0) {
-          if (settings->on_body) settings->on_body(parser, p, to_read);
+          if (settings->on_body) settings->on_body(parser, p, to_read, 0);
           p += to_read - 1;
         }
 
