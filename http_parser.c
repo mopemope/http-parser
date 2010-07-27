@@ -300,12 +300,12 @@ size_t http_parser_execute (http_parser *parser,
 {
   char c, ch;
   const char *p = data, *pe;
-  ssize_t to_read;
+  int64_t to_read;
 
   enum state state = (enum state) parser->state;
   enum header_states header_state = (enum header_states) parser->header_state;
-  size_t index = parser->index;
-  size_t nread = parser->nread;
+  uint64_t index = parser->index;
+  uint64_t nread = parser->nread;
 
   if (len == 0) {
     if (state == s_body_identity_eof) {
@@ -1402,7 +1402,7 @@ size_t http_parser_execute (http_parser *parser,
       }
 
       case s_body_identity:
-        to_read = MIN(pe - p, (ssize_t)parser->content_length);
+        to_read = MIN(pe - p, (int64_t)parser->content_length);
         if (to_read > 0) {
           if (settings->on_body) settings->on_body(parser, p, to_read, 0);
           p += to_read - 1;
@@ -1487,7 +1487,7 @@ size_t http_parser_execute (http_parser *parser,
       {
         assert(parser->flags & F_CHUNKED);
 
-        to_read = MIN(pe - p, (ssize_t)(parser->content_length));
+        to_read = MIN(pe - p, (int64_t)(parser->content_length));
 
         if (to_read > 0) {
           if (settings->on_body) settings->on_body(parser, p, to_read, 0);
