@@ -613,7 +613,7 @@ size_t http_parser_execute (http_parser *parser,
         if (ch == ' ' && matcher[index] == '\0') {
           state = s_req_spaces_before_url;
         } else if (ch == matcher[index]) {
-          ; // nada
+          ; /* nada */
         } else if (parser->method == HTTP_CONNECT) {
           if (index == 1 && ch == 'H') {
             parser->method = HTTP_CHECKOUT;
@@ -785,7 +785,7 @@ size_t http_parser_execute (http_parser *parser,
 
         switch (ch) {
           case '?':
-            break; // XXX ignore extra '?' ... is this right?
+            break; /* XXX ignore extra '?' ... is this right? */
           case ' ':
             CALLBACK(url);
             state = s_req_http_start;
@@ -815,7 +815,7 @@ size_t http_parser_execute (http_parser *parser,
 
         switch (ch) {
           case '?':
-            // allow extra '?' in query string
+            /* allow extra '?' in query string */
             break;
           case ' ':
             CALLBACK(url);
@@ -1403,7 +1403,7 @@ size_t http_parser_execute (http_parser *parser,
           }
         }
 
-        // Exit, the rest of the connect is in a different protocol.
+        /* Exit, the rest of the connect is in a different protocol. */
         if (parser->upgrade) {
           CALLBACK2(message_complete);
           return (p - data);
@@ -1572,6 +1572,7 @@ size_t http_parser_execute (http_parser *parser,
   return len;
 
 error:
+  parser->state = s_dead;
   return (p - data);
 }
 
